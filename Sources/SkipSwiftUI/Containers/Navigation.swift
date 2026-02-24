@@ -7,6 +7,25 @@ import Foundation
 import SkipFuse
 import SkipUI
 
+/// A protocol for types that provide a custom destination key for navigation destination
+/// registration and lookup, preventing JVM generic type erasure collisions.
+///
+/// On JVM, generic type parameters are erased at runtime, so types like
+/// `StackState<A>.Component` and `StackState<B>.Component` produce identical
+/// `String(describing:)` keys. Types conforming to this protocol provide a key
+/// that includes the generic type name, captured at Swift compile time.
+///
+/// Both the `navigationDestination(for:)` registration and the `destinationKeyTransformer`
+/// lookup check for this protocol to use the custom key when available.
+public protocol NavigationDestinationKeyProviding {
+    /// A type-level destination key that uniquely identifies this type for navigation
+    /// destination registration. Must be consistent between the static and instance levels.
+    static var destinationKey: String { get }
+
+    /// An instance-level destination key matching the static key.
+    var destinationKey: String { get }
+}
+
 public struct NavigationStack<Data, Root> where Root : View {
     private let root: Root
     private let getData: (() -> [Any /* SwiftHashable */])?
@@ -55,6 +74,14 @@ extension NavigationStack : SkipUIBridging {
         // When bridging we key destination functions on string rather than KClass
         let destinationKeyTransformer: (Any) -> String = {
             let value = ($0 as! SwiftHashable).base
+            // Prefer NavigationDestinationKeyProviding.destinationKey when available
+            // to prevent JVM generic type erasure collisions. Types like
+            // StackState<A>.Component embed the Element type name in their key at
+            // Swift compile time, ensuring distinct keys even when JVM erases
+            // generic parameters at runtime.
+            if let keyProvider = value as? NavigationDestinationKeyProviding {
+                return keyProvider.destinationKey
+            }
             return String(describing: type(of: value))
         }
         return SkipUI.NavigationStack(getData: getData, setData: setData, bridgedRoot: root.Java_viewOrEmpty, destinationKeyTransformer: destinationKeyTransformer)
@@ -226,7 +253,16 @@ extension View {
                 let data = ($0 as! SwiftHashable).base as! D
                 return destination(data).Java_viewOrEmpty
             }
-            return $0.Java_viewOrEmpty.navigationDestination(destinationKey: String(describing: data), bridgedDestination: bridgedDestination)
+            // Use NavigationDestinationKeyProviding.destinationKey if available to
+            // prevent JVM generic type erasure collisions (e.g. StackState<A>.Component
+            // vs StackState<B>.Component producing identical keys on JVM).
+            let key: String
+            if let keyProviding = D.self as? NavigationDestinationKeyProviding.Type {
+                key = keyProviding.destinationKey
+            } else {
+                key = String(describing: data)
+            }
+            return $0.Java_viewOrEmpty.navigationDestination(destinationKey: key, bridgedDestination: bridgedDestination)
         }
     }
 
