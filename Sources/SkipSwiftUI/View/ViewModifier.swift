@@ -25,9 +25,8 @@ extension ViewModifier where Self.Body == Never {
 }
 
 extension ViewModifier {
-    @available(*, unavailable)
-    @inlinable nonisolated public func concat<T>(_ modifier: T) -> Any /* ModifiedContent<Self, T> */ {
-        fatalError()
+    @inlinable nonisolated public func concat<T>(_ modifier: T) -> ModifiedContent<Self, T> {
+        return ModifiedContent(content: self, modifier: modifier)
     }
 }
 
@@ -51,10 +50,28 @@ extension Never : ViewModifier {
     public typealias Content = Never
 }
 
+public struct ModifiedContent<Content, Modifier> where Content : View, Modifier : ViewModifier {
+    public var content: Content
+    public var modifier: Modifier
+
+    @inlinable nonisolated public init(content: Content, modifier: Modifier) {
+        self.content = content
+        self.modifier = modifier
+    }
+}
+
+extension ModifiedContent : View {
+    public typealias Body = Never
+}
+
+extension ModifiedContent : SkipUIBridging {
+    public var Java_view: any SkipUI.View {
+        return content.Java_viewOrEmpty.modifier(modifier.Java_modifier)
+    }
+}
+
 extension View {
-    /* @inlinable */ nonisolated public func modifier<T>(_ modifier: T) -> some View /* ModifiedContent<Self, T> */ where T : ViewModifier {
-        return ModifierView(target: self) {
-            $0.Java_viewOrEmpty.modifier(modifier.Java_modifier)
-        }
+    @inlinable nonisolated public func modifier<T>(_ modifier: T) -> ModifiedContent<Self, T> where T : ViewModifier {
+        return ModifiedContent(content: self, modifier: modifier)
     }
 }
