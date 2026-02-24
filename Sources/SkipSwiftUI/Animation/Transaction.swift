@@ -102,12 +102,20 @@ public protocol TransactionKey {
     static var defaultValue: Self.Value { get }
 }
 
-@available(*, unavailable)
 public func withTransaction<Result>(_ transaction: Transaction, _ body: () throws -> Result) rethrows -> Result {
-    fatalError()
+    if let animation = transaction.animation {
+        return try withAnimation(animation, body)
+    } else {
+        return try body()
+    }
 }
 
-@available(*, unavailable)
 public func withTransaction<R, V>(_ keyPath: WritableKeyPath<Transaction, V>, _ value: V, _ body: () throws -> R) rethrows -> R {
-    fatalError()
+    var transaction = Transaction()
+    transaction[keyPath: keyPath] = value
+    if let animation = transaction.animation {
+        return try withAnimation(animation, body)
+    } else {
+        return try body()
+    }
 }
