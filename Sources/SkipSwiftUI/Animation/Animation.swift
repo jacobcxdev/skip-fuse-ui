@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: LGPL-3.0-only WITH LGPL-3.0-linking-exception
 import Foundation
 import SkipUI
+import SwiftJNI
 
 /* @frozen */ public struct Animation : Hashable, Sendable {
     private let spec: AnimationSpec
@@ -474,6 +475,11 @@ public struct AnimationCompletionCriteria : Hashable, Sendable {
 }
 
 public func withAnimation<Result>(_ animation: Animation? = .default, _ body: () throws -> Result) rethrows -> Result {
+    // In test contexts (Robolectric), JNI is not initialised — skip animation
+    // bridge calls and execute the body directly. Animation is purely visual.
+    guard isJNIInitialized else {
+        return try body()
+    }
     let isNested = SkipUI.Animation.preBodyWithAnimation(animation?.Java_animation)
     defer {
         if !isNested {

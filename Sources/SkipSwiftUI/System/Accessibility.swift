@@ -94,24 +94,20 @@ extension View {
 }
 
 extension View {
-    @available(*, unavailable)
     nonisolated public func accessibilityHint(_ hint: Text, isEnabled: Bool = true) -> some View /* ModifiedContent<Self, AccessibilityAttachmentModifier> */ {
-        stubView()
+        return ModifierView(target: self) { $0.Java_viewOrEmpty }
     }
 
-    @available(*, unavailable)
-    nonisolated public func accessibilityHint(_ hintKey: LocalizedStringKey, isEnabled: Bool) -> some View /* ModifiedContent<Self, AccessibilityAttachmentModifier> */ {
-        stubView()
+    nonisolated public func accessibilityHint(_ hintKey: LocalizedStringKey, isEnabled: Bool = true) -> some View /* ModifiedContent<Self, AccessibilityAttachmentModifier> */ {
+        return accessibilityHint(Text(hintKey), isEnabled: isEnabled)
     }
 
-    @available(*, unavailable)
-    @_disfavoredOverload nonisolated public func accessibilityHint(_ hintResource: AndroidLocalizedStringResource, isEnabled: Bool) -> some View /* ModifiedContent<Self, AccessibilityAttachmentModifier> */ {
-        stubView()
+    @_disfavoredOverload nonisolated public func accessibilityHint(_ hintResource: AndroidLocalizedStringResource, isEnabled: Bool = true) -> some View /* ModifiedContent<Self, AccessibilityAttachmentModifier> */ {
+        return accessibilityHint(Text(hintResource), isEnabled: isEnabled)
     }
 
-    @available(*, unavailable)
-    @_disfavoredOverload nonisolated public func accessibilityHint<S>(_ hint: S, isEnabled: Bool) -> some View /* ModifiedContent<Self, AccessibilityAttachmentModifier> */ where S : StringProtocol {
-        stubView()
+    @_disfavoredOverload nonisolated public func accessibilityHint<S>(_ hint: S, isEnabled: Bool = true) -> some View /* ModifiedContent<Self, AccessibilityAttachmentModifier> */ where S : StringProtocol {
+        return accessibilityHint(Text(hint), isEnabled: isEnabled)
     }
 }
 
@@ -421,9 +417,8 @@ extension View {
 }
 
 extension View {
-    @available(*, unavailable)
     nonisolated public func accessibilityElement(children: AccessibilityChildBehavior = .ignore) -> some View {
-        stubView()
+        return ModifierView(target: self) { $0.Java_viewOrEmpty }
     }
 }
 

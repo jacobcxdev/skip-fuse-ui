@@ -6,6 +6,9 @@ import CoreGraphics
 import Foundation
 import SkipFuse
 import SkipUI
+#if os(Android)
+import SkipAndroidBridge
+#endif
 
 /// A protocol for types that provide a custom destination key for navigation destination
 /// registration and lookup, preventing JVM generic type erasure collisions.
@@ -17,6 +20,13 @@ import SkipUI
 ///
 /// Both the `navigationDestination(for:)` registration and the `destinationKeyTransformer`
 /// lookup check for this protocol to use the custom key when available.
+@inline(__always)
+private func navLog(_ msg: @autoclosure () -> String) {
+    #if FUSE_NAV_DEBUG && os(Android)
+    _navDebugLog(msg())
+    #endif
+}
+
 public protocol NavigationDestinationKeyProviding {
     /// A type-level destination key that uniquely identifies this type for navigation
     /// destination registration. Must be consistent between the static and instance levels.
@@ -41,11 +51,13 @@ public struct NavigationStack<Data, Root> where Root : View {
         self.root = root()
         self.getData = {
             let boundPath = path.wrappedValue
+            navLog("FuseNavStack.getData: count=\(boundPath.count)")
             return (0..<boundPath.count).map {
                 Java_swiftHashable(for: boundPath[$0])
             }
         }
         self.setData = { array in
+            navLog("FuseNavStack.setData: count=\(array.count)")
             var boundPath = NavigationPath()
             array.forEach { boundPath.append(($0 as! SwiftHashable).base as! AnyHashable) }
             path.wrappedValue = boundPath
@@ -71,6 +83,7 @@ extension NavigationStack : View {
 
 extension NavigationStack : SkipUIBridging {
     public var Java_view: any SkipUI.View {
+        navLog("FuseNavStack.Java_view: hasGetData=\(getData != nil)")
         // When bridging we key destination functions on string rather than KClass
         let destinationKeyTransformer: (Any) -> String = {
             let value = ($0 as! SwiftHashable).base
@@ -262,6 +275,7 @@ extension View {
             } else {
                 key = String(describing: data)
             }
+            navLog("FuseNavDest: registering key=\(key)")
             return $0.Java_viewOrEmpty.navigationDestination(destinationKey: key, bridgedDestination: bridgedDestination)
         }
     }
