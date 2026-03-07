@@ -13,7 +13,10 @@ import SkipUI
     }
 
     /* @inlinable */ public var wrappedValue: Value {
-        return valueBox.value!.value
+        if let box = valueBox.value {
+            return box.value
+        }
+        return defaultValue()
     }
 
     public var projectedValue: Self {
