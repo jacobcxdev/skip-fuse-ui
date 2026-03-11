@@ -194,6 +194,8 @@ extension EnvironmentValues {
             return (value as? TimeZone ?? TimeZone.current).identifier
         case "verticalSizeClass":
             return (value as? UserInterfaceSizeClass)?.rawValue
+        case "editMode":
+            return (value as? Binding<EditMode>)?.wrappedValue.isEditing == true
         default:
             return nil
         }
@@ -219,6 +221,7 @@ extension EnvironmentValues {
         keys[\EnvironmentValues.scrollDismissesKeyboardMode] = "scrollDismissesKeyboardMode"
         keys[\EnvironmentValues.timeZone] = "timeZone"
         keys[\EnvironmentValues.verticalSizeClass] = "verticalSizeClass"
+        keys[\EnvironmentValues.editMode] = "editMode"
         return keys
     }()
 
@@ -634,5 +637,14 @@ extension EnvironmentValues {
     public var scrollDismissesKeyboardMode: ScrollDismissesKeyboardMode {
         get { fatalError("Read via @Environment property wrapper") }
         set { fatalError("Set via dedicated View modifier") }
+    }
+}
+
+extension EnvironmentValues {
+    @available(macOS, unavailable)
+    @available(watchOS, unavailable)
+    public var editMode: Binding<EditMode>? {
+        get { nil }
+        set { fatalError("Set via .environment modifier") }
     }
 }

@@ -8,10 +8,41 @@ import SkipUI
 
 public struct List<SelectionValue, Content> where SelectionValue : Hashable, Content : View {
     private let content: Content
+    private var selectionProxy: SkipUI.ListSelectionProxy? = nil
 
-    @available(*, unavailable)
     public init(selection: Binding<Set<SelectionValue>>?, @ViewBuilder content: () -> Content) {
-        fatalError()
+        self.content = content()
+        if let selection {
+            self.selectionProxy = SkipUI.ListSelectionProxy(
+                isSelected: { key in
+                    selection.wrappedValue.contains(where: { String(describing: $0) == key })
+                },
+                toggleSelection: { key, rawID in
+                    print("toggleSelection: key='\(key)' rawID=\(rawID) rawIDType=\(type(of: rawID)) SelectionValue=\(SelectionValue.self)")
+                    var current = selection.wrappedValue
+                    if let existing = current.first(where: { String(describing: $0) == key }) {
+                        current.remove(existing)
+                    } else if let sv = rawID as? SelectionValue {
+                        current.insert(sv)
+                    } else if let ah = rawID as? AnyHashable, let sv = ah.base as? SelectionValue {
+                        current.insert(sv)
+                    } else if SelectionValue.self == UUID.self, let uuid = UUID(uuidString: key), let sv = uuid as? SelectionValue {
+                        // rawID arrives from Kotlin/JNI as an opaque SwiftHashable; reconstruct UUID from key string
+                        current.insert(sv)
+                    } else if SelectionValue.self == String.self, let sv = key as? SelectionValue {
+                        current.insert(sv)
+                    } else if SelectionValue.self == Int.self, let i = Int(key), let sv = i as? SelectionValue {
+                        current.insert(sv)
+                    } else if SelectionValue.self == Int64.self, let i = Int64(key), let sv = i as? SelectionValue {
+                        current.insert(sv)
+                    } else {
+                        print("toggleSelection: NO CAST PATH MATCHED for key='\(key)'")
+                    }
+                    print("toggleSelection: result count=\(current.count)")
+                    selection.wrappedValue = current
+                }
+            )
+        }
     }
 
     @available(*, unavailable)
@@ -26,7 +57,7 @@ extension List : View {
 
 extension List : SkipUIBridging {
     public var Java_view: any SkipUI.View {
-        return SkipUI.List(bridgedContent: content.Java_viewOrEmpty)
+        return SkipUI.List(bridgedContent: content.Java_viewOrEmpty, bridgedSelection: selectionProxy)
     }
 }
 
@@ -397,8 +428,10 @@ extension View {
         stubView()
     }
 
-    @available(*, unavailable)
     nonisolated public func swipeActions<T>(edge: HorizontalEdge = .trailing, allowsFullSwipe: Bool = true, @ViewBuilder content: () -> T) -> some View where T : View {
-        stubView()
+        let bridgedContent = content()
+        return ModifierView(target: self) {
+            $0.Java_viewOrEmpty.swipeActions(bridgedEdge: Int(edge.rawValue), allowsFullSwipe: allowsFullSwipe, bridgedContent: bridgedContent.Java_viewOrEmpty)
+        }
     }
 }
