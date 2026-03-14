@@ -199,8 +199,10 @@ extension EnvironmentValues {
             return (value as? UserInterfaceSizeClass)?.rawValue
         case "dynamicTypeMode":
             return (value as? DynamicTypeMode)?.rawValue ?? DynamicTypeMode.native.rawValue
+        #if !os(macOS)
         case "editMode":
             return (value as? Binding<EditMode>)?.wrappedValue.isEditing == true
+        #endif
         default:
             return nil
         }
@@ -226,7 +228,9 @@ extension EnvironmentValues {
         keys[\EnvironmentValues.scrollDismissesKeyboardMode] = "scrollDismissesKeyboardMode"
         keys[\EnvironmentValues.timeZone] = "timeZone"
         keys[\EnvironmentValues.verticalSizeClass] = "verticalSizeClass"
+        #if !os(macOS)
         keys[\EnvironmentValues.editMode] = "editMode"
+        #endif
         keys[\EnvironmentValues.dynamicTypeMode] = "dynamicTypeMode"
         return keys
     }()
