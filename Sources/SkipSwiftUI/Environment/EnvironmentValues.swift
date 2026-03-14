@@ -102,6 +102,9 @@ extension EnvironmentValues {
                     }
                 }
             }
+        case "dynamicTypeMode":
+            let rawValue = bridgedValue as? Int
+            return rawValue == nil ? DynamicTypeMode.native : DynamicTypeMode(rawValue: rawValue!) ?? .native
         case "scenePhase":
             let rawValue = bridgedValue as? Int
             return rawValue == nil ? ScenePhase.active : ScenePhase(rawValue: rawValue!) ?? .active
@@ -194,6 +197,8 @@ extension EnvironmentValues {
             return (value as? TimeZone ?? TimeZone.current).identifier
         case "verticalSizeClass":
             return (value as? UserInterfaceSizeClass)?.rawValue
+        case "dynamicTypeMode":
+            return (value as? DynamicTypeMode)?.rawValue ?? DynamicTypeMode.native.rawValue
         case "editMode":
             return (value as? Binding<EditMode>)?.wrappedValue.isEditing == true
         default:
@@ -222,6 +227,7 @@ extension EnvironmentValues {
         keys[\EnvironmentValues.timeZone] = "timeZone"
         keys[\EnvironmentValues.verticalSizeClass] = "verticalSizeClass"
         keys[\EnvironmentValues.editMode] = "editMode"
+        keys[\EnvironmentValues.dynamicTypeMode] = "dynamicTypeMode"
         return keys
     }()
 
@@ -424,6 +430,11 @@ extension EnvironmentValues {
 extension EnvironmentValues {
     @available(*, unavailable)
     public var dynamicTypeSize: Any /* DynamicTypeSize */ {
+        get { fatalError("Read via @Environment property wrapper") }
+        set { fatalError("Set via dedicated View modifier") }
+    }
+
+    public var dynamicTypeMode: DynamicTypeMode {
         get { fatalError("Read via @Environment property wrapper") }
         set { fatalError("Set via dedicated View modifier") }
     }
