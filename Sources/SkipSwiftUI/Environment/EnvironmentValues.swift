@@ -659,3 +659,10 @@ extension EnvironmentValues {
         set { fatalError("Set via .environment modifier") }
     }
 }
+
+extension EnvironmentValues {
+    public var contentMargins: ContentMargins? {
+        get { fatalError("Read via @Environment property wrapper") }
+        set { fatalError("Set via dedicated View modifier") }
+    }
+}
